@@ -16,6 +16,8 @@
 
 void InitADC(uint8 pinNo, uint8 pinFunc)
 {
+	// ADC Initialization for LPC2129
+	
 	// Cfg ADC pinNo as ADC input function
 	cfgPortPin(0, pinNo, pinFunc);
 	// Cfg ADCR SFR
@@ -24,6 +26,9 @@ void InitADC(uint8 pinNo, uint8 pinFunc)
 
 void ReadADC(uint8 chNo, real32 *eAR, uint32 *dVal)
 {
+	// Function to read value from ADC for LPC2129
+	
+	
 	// clear prev channel selection
 	WRITEBYTE(ADCR, 0, ~(0xFF));
 	// Select analog channel, start conversion
@@ -53,6 +58,8 @@ void ReadADC(uint8 chNo, real32 *eAR, uint32 *dVal)
 
 void InitADC(uint8 pinNo, uint8 adcPort, uint8 pinFunc)
 {
+	// ADC Initialization for LPC2148 
+	
 	// Cfg ADC pinNo as ADC input function
 	cfgPortPin(0, pinNo, pinFunc);
 	// Cfg ADCR SFR
@@ -64,6 +71,8 @@ void InitADC(uint8 pinNo, uint8 adcPort, uint8 pinFunc)
 
 void ReadADC(uint8 chNo, uint8 adcPort, real32 *eAR, uint32 *dVal)
 {
+	// Function to read value from ADC for LPC2148
+	
 	// clear prev channel selection
 	//WRITEBYTE(token(token(AD, val(adcPort)), CR), 0, ~(0xFF));
 	if (adcPort == 0)

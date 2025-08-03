@@ -20,6 +20,7 @@ const uint8 passwordLUT[4][4] =
 void InitKPM(void)
 {
 	// Initialize KPM
+	
 	// Rows as output, Cols as Input
 	WRITENIBBLE(IODIR1, ROW0, 0xF);
 	// Cols as Input by-default
@@ -81,6 +82,9 @@ uint8 keyScan(void)
 // User defined function to get input from KPM
 uint32 getU32InKPM(void)
 {
+	// Function to scan positive numeric data through KPM.
+	// Only numeric keys entered are considered as data except for special symbols like '*', '#', 'SPACE'
+	// If key entered is in the followinf 'B', 'C', 'E': these are special characters which has their own meaning and has special functionality
 	uint32 res=0;
 	uint8 key;
 	

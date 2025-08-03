@@ -1,4 +1,7 @@
 // lcd.c
+/*
+LCD related functionality is included in this file
+*/
 #include "MCU_settings.h"
 #include "mainLPCheader.h"
 
@@ -7,8 +10,11 @@
 #include "lcd_defines.h"
 #include "delay.h"
 
+
 void WriteLCD(uint8 byte)
 {
+	// Function to Write a byte in LCD
+	
 	// Write data into LCD
 	WRITEBYTE(IOPIN0, LCD_DATA, byte);
 	
@@ -26,6 +32,8 @@ void WriteLCD(uint8 byte)
 
 void CmdLCD(uint8 cmd)
 {
+	// Function to write a command in LCD
+	
 	// To write command into LCD, LCD_RS register should be CLEARED
 	IOCLR0 = 1<<LCD_RS;
 	WriteLCD(cmd);
@@ -76,6 +84,7 @@ void InitLCD(void)
 
 void CharLCD(uint8 asciiVal)
 {
+	// Function to write Character data in LCD
 	// To write Data, LCD_RS register should be SET
 	IOSET0 = 1<<LCD_RS;
 	WriteLCD(asciiVal);
@@ -83,6 +92,8 @@ void CharLCD(uint8 asciiVal)
 
 void StrLCD(uint8 *p)
 {
+	// Function to write data array of Character (can be called as String) in LCD
+	// Here every character in string is written in LCD by calling CharLCD function
 	while(*p)
 	{
 		CharLCD(*p);
@@ -92,6 +103,9 @@ void StrLCD(uint8 *p)
 
 void U32LCD(uint32 num)
 {
+	// Function to write positive numeric data in LCD
+	
+	// Step 1: Convert the numeric data to string (itoa logic)
 	uint8 a[10];
 	int32 i=0;
 	
@@ -101,6 +115,7 @@ void U32LCD(uint32 num)
 		num = num/10;
 	}
 	
+	// Step 2: Write the string in reverse order
 	for (--i; i>=0; i--)
 	{
 		CharLCD(a[i]);
@@ -109,6 +124,7 @@ void U32LCD(uint32 num)
 	
 void S32LCD(int32 num)
 {
+	// Function to write positive or negative numeric data in LCD
 	// If num < 0, represent '-'
 	if (num < 0)
 	{
@@ -120,6 +136,7 @@ void S32LCD(int32 num)
 
 void F32LCD(real32 fnum, uint32 precision)
 {
+	// Function to write real/float data in LCD
 	uint32 num, i;
 	
 	// check for -ve numbers

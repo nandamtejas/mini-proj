@@ -13,11 +13,14 @@ real32 temp=0.0;
 
 void ReadLM35(real32 *temp)
 {
+	// Function to read temperature from temperature Sensor through ADC channel
+	
 	uint32 dVal=0;
 	static uint32 flag=0;
 	
 	if (flag == 0)
 	{
+		// If the ADC is not Initialized, Initialize the ADC
 		#ifdef __LPC2129
 		InitADC(ADC_IN_PIN, ADC_IN_PINFUNC);
 		#elif defined(__LPC2148)
@@ -33,6 +36,7 @@ void ReadLM35(real32 *temp)
 		ReadADC(ADC_IN_CH, ADC_IN_PORT, temp, &dVal);
 	#endif
 	
+	// temperature calculations
 	*temp = *temp*100;
 }
 

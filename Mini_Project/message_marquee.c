@@ -15,7 +15,11 @@ int32 i,j,k,c;
 int32 cursorPos;
 uint8 lcd_msg[WINDOW*4];
 
-extern __attribute__((weak)) volatile uint32 scrollStopFlag;
+// External declaration of scrollStopFlag variable
+// This variable is defined in main.c and shared across multiple source files
+// It is declared as 'volatile' to reflect that its value may change unexpectedly (e.g., in ISRs or other threads)
+// Do not define it here — this is just a declaration to access the same global instance
+extern volatile uint32 scrollStopFlag;
 
 
 void message_marquee(uint8* msg)
@@ -86,16 +90,18 @@ void message_marquee_v2(uint8 *msg)
 
 void message_marquee_v3(uint8* msg)
 {
-	// message marquee
+	// message marquee version 3
 	// the whole message is scrolled from right to left one time
 	// for continuous scrolling, need to call this function inside while loop
+	// This functionality can be terminated through the scrollStopFlag condition which is externally declared in main.c
 	
-	// stopFlag=0 -> continue the process
-	// stopFlag=1 -> Terminate the process
+	// scrollStopFlag=0 -> continue the process
+	// scrollStopFlag=1 -> Terminate the process
 	
 	i=0,j=0, k=0, c=0;
 	cursorPos = WINDOW-1;
-
+	
+	// To realize the marquee, we need to check two condition as below mentioned
 	for (i=0; ((msg[k]!='\0') && (scrollStopFlag==0)); i++)
 	{
 		
@@ -103,14 +109,16 @@ void message_marquee_v3(uint8* msg)
 		j=k;
 		for (c=0; c<WINDOW; c++)
 		{
-			// if c pointer is less than the initial cursorPos, modify lcd_msg[c] as ' ', else with the character of index j is pointing
-			//CmdLCD(GOTO_LINE1_POS0+c);
+			// If c is less than current cursorPos or message ends, print space
+			// Otherwise, print characters starting from msg[j]
 			if ((c<cursorPos) || (msg[j] == '\0'))
 				lcd_msg[c] = ' ';
 			else
 				lcd_msg[c] = msg[j++];
 		}
-		// decrement the cursorPos as it is the pointer responsible for flow of marquee from right to left
+		// Move the message to the left by decreasing cursor position
+		// Once cursorPos reaches 0, increment starting index k
+
 		if (--cursorPos<0)
 		{
 			cursorPos = 0;

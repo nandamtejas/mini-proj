@@ -1,5 +1,9 @@
 // kpm_admin.c
 
+/*
+This file is solely for ADMIN mode, and ADMIN mode is mostly realized through KPM
+*/
+
 #include <string.h>
 #include "MCU_settings.h"
 #include "mainLPCheader.h"
@@ -141,7 +145,7 @@ PASSW:	CmdLCD(DSP_ON_CUR_NOBLINK);
 // Admin mode
 void adminMode(void)
 {
-	// Admin mode function
+	// Admin mode function, called when EINT0 interrupt occurs
 	
 	// Functionality to modify the Date and Time or Message enabled
 	uint8 key;

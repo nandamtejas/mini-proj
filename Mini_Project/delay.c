@@ -1,4 +1,8 @@
 // delay.c
+
+/*
+This file is for delat definitions
+*/
 #include "types.h"
 
 void delay_us(uint32 dlyUS)
