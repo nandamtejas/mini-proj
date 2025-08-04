@@ -77,7 +77,75 @@ uint8 keyScan(void)
 	
 	return passwordLUT[row][col];
 }
-
+// Function to get string input from KPM
+uint8* strKeyScan(void)
+{
+	// This function is to scan the string input from KPM and return the entered string
+	uint8 result[16];
+	uint8 key;
+	int32 i=0;
+	
+	while(1)
+	{
+		
+		// break if the entered string length exceeds 16
+		if (i>=16)
+			break;
+		
+		// call the keyScan function
+		key = keyScan();
+		
+		// if key == 'E', break the loop
+		if (key == 'E')
+			break;
+		
+		// Check for the conditions
+		switch(key)
+		{
+			case '0':
+			case '1':
+			case '2':
+			case '3':
+			case '4':
+			case '5':
+			case '6':
+			case '7':
+			case '8':
+			case '9':
+			case '*':
+			case '#':
+			case ' ': result[i++] = key;
+						CharLCD(key);
+						delay_ms(50);
+						// clear part of cursor
+						CmdLCD(SHIFT_CUR_LEFT);
+						CharLCD(' ');
+						CmdLCD(SHIFT_CUR_LEFT);
+						// display '*' instead of entered key
+						CharLCD('*');
+						break;
+			case 'B': // backspace
+					result[i--] = '\0';
+					// clear part of cursor
+					CmdLCD(SHIFT_CUR_LEFT);
+					CharLCD(' ');
+					CmdLCD(SHIFT_CUR_LEFT);
+						break;
+			case 'C': // clear password
+					for (--i; i>=0; i--)
+					{
+						result[i] = '\0';
+						// clear part of cursor
+						CmdLCD(SHIFT_CUR_LEFT);
+						CharLCD(' ');
+						CmdLCD(SHIFT_CUR_LEFT);
+					}
+					break;
+		}
+	}
+	result[i] = '\0';
+	return result;
+}
 
 // User defined function to get input from KPM
 uint32 getU32InKPM(void)
