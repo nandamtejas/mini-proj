@@ -108,6 +108,11 @@ volatile AlarmMode currentAlarmMode = ALARM_DISABLE;
 // 1 -> Condition to stop the process
 volatile uint32 scrollStopFlag = 0;
 
+// variable to hold the message modified status
+// 0 -> Condition indicating message not modified
+// 1 -> Condition indicating message modified
+volatile uint32 msgModifiedFlag = 0;
+
 // ISR declaration
 void eint0_isr(void) __irq
 {
@@ -138,31 +143,19 @@ void eint0_isr(void) __irq
 		prevALMin = ((ALMIN-15)+60)%60;
 		prevALHour = (ALMIN<=15)?ALHOUR-1:ALHOUR;
 
-		if ( (ISNOTWITHIN(HOUR, prevALHour, ALHOUR)) || ISNOTWITHIN(MIN, prevALMin, ((ALMIN<15)?(ALMIN+60):(ALMIN))) )
+		if ( 
+			(ISNOTWITHIN(HOUR, prevALHour, ALHOUR)) || ISNOTWITHIN(MIN, prevALMin, ((ALMIN<15)?(ALMIN+60):(ALMIN))) \
+			|| ((msgModifiedFlag == 1) && (getCurrentMessagesEnabledLength() == 0))
+		)
 		{
 			// If the time has been changed by the ADMIN which is not between the range of ALARM_START time and ALARM_STOP time (15 minutes Bandwidth), 
+			// Or the message has beed modified
 			// Then reset the currentAlarmMode to ALARM_STOP_MODE
 			currentAlarmMode = ALARM_STOP_MODE;
 			// reset the next alarm
 			setNextMessageAlarm();
 			// stop current scrolling
 			scrollStopFlag = 1;
-		}
-		else if (isCurrentMessagesModifiedorCorrupted())
-		{
-			// if current message list is modified by admin, reorder the currentMessageList
-			reorderCurrentMessages();
-			
-			// Check the currentMessageLength after reordering, if 0 -> Stop scroll
-			if (getCurrentMessagesLength() == 0)
-			{
-				// Then reset the currentAlarmMode to ALARM_STOP_MODE
-				currentAlarmMode = ALARM_STOP_MODE;
-				// reset the next alarm
-				setNextMessageAlarm();
-				// stop current scrolling
-				scrollStopFlag = 1;
-			}
 		}
 		else
 		{
@@ -171,6 +164,9 @@ void eint0_isr(void) __irq
 			CmdLCD(GOTO_LINE1_POS0);
 		}
 	}
+	
+	// reset the message modified flag
+	msgModifiedFlag=0;
 			
 	// If any changes made for Date and Time or Message, Make Sure to update the Alarm Details which should be go along with current time
 	// If Time has changed or any of message enable bit is modified, call the below function
@@ -338,25 +334,27 @@ int main()
 			
 				// For either MESSAGE_SCROLL_MODE or CLOCK_MODE, The LCD Cursor should be OFF
 				CmdLCD(DSP_ON_CUR_OFF);
-				
-				// Change currentSystemMode to previousSystemMode
-				//currentSystemMode = (previousSystemMode == MESSAGE_SCROLL_MODE) ? MESSAGE_SCROLL_MODE: CLOCK_MODE;
-				if ( (previousSystemMode == MESSAGE_SCROLL_MODE) && (currentAlarmMode == ALARM_START_MODE) )
+
+				if (previousSystemMode == MESSAGE_SCROLL_MODE)
 				{
-					currentSystemMode = MESSAGE_SCROLL_MODE;
-					// Re-display the EVENT-BOARD in LCD
-					CmdLCD(GOTO_LINE2_POS0);
-					StrLCD("EVENT BOARD");
-					CmdLCD(GOTO_LINE1_POS0);
-				}	
-					else if ( (previousSystemMode == MESSAGE_SCROLL_MODE) && (currentAlarmMode == ALARM_STOP_MODE) )
+					// if MESSAGE_SCROLL_MODE is previous system mode, then check for the currentAlarmMode
+					if (currentAlarmMode == ALARM_START_MODE)
 					{
-						flag=0;
-						currentSystemMode = MESSAGE_SCROLL_MODE;
+						// if currentAlarmMode is ALARM_START_MODE, Re-display the EVENT BOARD in LCD
+						CmdLCD(GOTO_LINE2_POS0);
+						StrLCD("EVENT BOARD");
+						CmdLCD(GOTO_LINE1_POS0);
 					}
+					else
+					{
+						// if currentAlarmMode is ALARM_STOP_MODE, Reset the input flag
+						flag=0;
+					}
+					// Come back to MESSAGE_SCROLL_MODE
+					currentSystemMode = MESSAGE_SCROLL_MODE;
+				}
 				else
 					currentSystemMode = CLOCK_MODE;
-					
 						
 				previousSystemMode = ADMIN_MODE;
 				break;

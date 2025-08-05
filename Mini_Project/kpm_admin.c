@@ -4,6 +4,7 @@
 This file is solely for ADMIN mode, and ADMIN mode is mostly realized through KPM
 */
 
+#include <string.h>
 #include "MCU_settings.h"
 #include "mainLPCheader.h"
 #include "types.h"
@@ -15,10 +16,14 @@ This file is solely for ADMIN mode, and ADMIN mode is mostly realized through KP
 #include "messages.h"
 
 // strcmp prototype
-int32 strcmp(const char * , const char *);
+//int32 strcmp(const char * , const char *);
 
 // variable to hide the password
 volatile uint32 hide=0;
+
+// external variable
+// message modified 
+extern volatile uint32 msgModifiedFlag;
 
 // function to verify password
 uint32 verify_password(int8* password)
@@ -120,6 +125,8 @@ AFT_PASS: CmdLCD(DSP_ON_CUR_OFF);
 			break;
 		case '2': // MSG enable edit
 			edit_message();
+			// set message modified flag
+			msgModifiedFlag = 1;
 			break;
 		default: // other than '1' or '2' key is pressed, take the input once again
 			CmdLCD(CLEAR_LCD);

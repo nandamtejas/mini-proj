@@ -45,7 +45,7 @@
             <InvalidFlash>1</InvalidFlash>
           </TargetStatus>
           <OutputDirectory>.\</OutputDirectory>
-          <OutputName>message_marquee_test2</OutputName>
+          <OutputName>main</OutputName>
           <CreateExecutable>1</CreateExecutable>
           <CreateLib>0</CreateLib>
           <CreateHexFile>1</CreateHexFile>
@@ -461,9 +461,14 @@
               <FilePath>.\rtc.c</FilePath>
             </File>
             <File>
-              <FileName>message_marquee_test2.c</FileName>
+              <FileName>InterruptCfg.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\tests\message_marquee_test2.c</FilePath>
+              <FilePath>.\InterruptCfg.c</FilePath>
+            </File>
+            <File>
+              <FileName>main.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\main.c</FilePath>
             </File>
           </Files>
         </Group>

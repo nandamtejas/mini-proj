@@ -136,6 +136,9 @@ void strKeyScan(uint8* result)
 						}
 						break;
 			case 'B': // backspace
+					if (i == 0)
+						// if the i=0, i.e; the cursor is at starting position, we should not alter the cursor
+						break;
 					result[i--] = '\0';
 					// clear part of cursor
 					CmdLCD(SHIFT_CUR_LEFT);

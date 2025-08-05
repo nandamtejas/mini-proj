@@ -205,7 +205,7 @@ REAP: CmdLCD(CLEAR_LCD);
 	// Key scan the option and perform necessary operation
 	key = keyScan();
 	CharLCD(key);
-	delay_ms(250);
+	delay_ms(150);
 	CmdLCD(CLEAR_LCD);
 	CmdLCD(DSP_ON_CUR_OFF);
 	switch(key)

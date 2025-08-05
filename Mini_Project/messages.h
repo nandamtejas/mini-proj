@@ -10,8 +10,6 @@ void getMessagesFromTime(uint32 hour, uint32 min);
 void displayMarquee(void);
 void setNextMessageAlarm(void);
 void edit_message(void);
-uint32 isCurrentMessagesModifiedorCorrupted(void);
-void reorderCurrentMessages(void);
-int32 getCurrentMessagesLength(void);
+int32 getCurrentMessagesEnabledLength(void);
 
 #endif

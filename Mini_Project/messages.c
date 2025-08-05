@@ -192,52 +192,18 @@ void displayMarquee(void)
 	}
 }
 
-// Function to indicate the message change
-uint32 isCurrentMessagesModifiedorCorrupted(void)
+int32 getCurrentMessagesEnabledLength(void)
 {
-	// This function is to check the current messages to be scrolled is modified in ADMIN MODE or corrupted in some other circumstances.
-	// Message modification can be checked in enabled member of currentMessages
-	
-	uint32 i;
-	// if there are no currentMessages, return 0 indicates no message is present to get modified
-	if (sel==0)
-		return 0;
-	
+	// function to get no of currentMessages Enabled, which was modified/corrupted by ADMIN
+	uint32 i, len=0;
 	for (i=0; i<sel; i++)
 	{
-		// Iterate through all the currentMessages present, check for their message enabled status
-		// If any of the message is enabled status is 0, i.e the message is corrupted under some circumstances
-		// Either in ADMIN has modified the message or any other corruption took place
-		if (currentMessages[i]->enabled == 0)
-			return 1;
+		// check if currentMessages[i] is enabled
+		if (currentMessages[i]->enabled == 1)
+			len++;
 	}
-	// If not found any modifications, return 0, indicating no messages has been corrupted
-	return 0;
-}
-
-void reorderCurrentMessages(void)
-{
-	// Function is to reorder currentMessages list if any corruption or modification takes place
-	int32 i, j;
-	// First we need to clear the corrupted messages
-	for (i=0; i<sel; i++)
-	{
-		if (currentMessages[i]->enabled == 0)
-		{
-			for (j=i+1; j<sel; j++)
-			{
-				currentMessages[j-1] = currentMessages[j];
-			}
-			sel--;
-			i--;
-		}
-	}
-}
-
-int32 getCurrentMessagesLength(void)
-{
-	// function to get currentMessages length
-	return sel;
+	// return the len
+	return len;
 }
 
 
