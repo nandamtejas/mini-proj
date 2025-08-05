@@ -4,7 +4,6 @@
 This file is solely for ADMIN mode, and ADMIN mode is mostly realized through KPM
 */
 
-#include <string.h>
 #include "MCU_settings.h"
 #include "mainLPCheader.h"
 #include "types.h"
@@ -15,78 +14,18 @@ This file is solely for ADMIN mode, and ADMIN mode is mostly realized through KP
 #include "rtc.h"
 #include "messages.h"
 
+// strcmp prototype
+int32 strcmp(const char * , const char *);
 
-// function to enter the password and returns the entered password
-void enter_password(int8* password)
-{
-	// function to start password typing activity
-	int32 i=0;
-	uint8 key;
-	
-	while (1)
-	{
-		// scan every key entered is a valid password key or special key
-		// if numeric or symbol key listed in switch case entered, consider it as a part of password
-		// if special keys entered such as 'B', 'C', 'E', perform the corresponding activity
-		key=keyScan();
-		
-		if (i >= 16)
-			break;
-		
-		switch(key)
-		{
-			case '0':
-			case '1':
-			case '2':
-			case '3':
-			case '4':
-			case '5':
-			case '6':
-			case '7':
-			case '8':
-			case '9':
-			case '*':
-			case '#':
-			case ' ': password[i++] = key;
-						CharLCD(key);
-						delay_ms(50);
-						// clear part of cursor
-						CmdLCD(SHIFT_CUR_LEFT);
-						CharLCD(' ');
-						CmdLCD(SHIFT_CUR_LEFT);
-						// display '*' instead of entered key
-						CharLCD('*');
-						break;
-			case 'B': // backspace
-					password[i--] = '\0';
-					// clear part of cursor
-					CmdLCD(SHIFT_CUR_LEFT);
-					CharLCD(' ');
-					CmdLCD(SHIFT_CUR_LEFT);
-						break;
-			case 'C': // clear password
-					for (--i; i>=0; i--)
-					{
-						password[i] = '\0';
-						// clear part of cursor
-						CmdLCD(SHIFT_CUR_LEFT);
-						CharLCD(' ');
-						CmdLCD(SHIFT_CUR_LEFT);
-					}
-					break;
-			case 'E': // Exit the function
-					password[i] = '\0';
-					return;
-		}
-		delay_ms(250);
-	}
-}
+// variable to hide the password
+volatile uint32 hide=0;
 
 // function to verify password
 uint32 verify_password(int8* password)
 {
 	// strcmp logic
 	return !(strcmp(ADMIN_PASSWORD, password));
+	
 }
 
 void clearPassword(int8* password)
@@ -105,7 +44,7 @@ void clearPassword(int8* password)
 void admin_enter_password()
 {
 	// ADMIN mode activity starts
-	int8 password[20];
+	uint8 password[20];
 	
 	// Password Activity displayed in LCD starts
 PASSW:	CmdLCD(DSP_ON_CUR_NOBLINK);
@@ -116,14 +55,17 @@ PASSW:	CmdLCD(DSP_ON_CUR_NOBLINK);
 	CmdLCD(GOTO_LINE2_POS0);
 	
 	// call enter_password function
-	enter_password(password);
+	//enter_password(password);
+	hide=1;
+	strKeyScan(password);
+	hide=0;
 	delay_ms(250);
 	
 	// Clear screen after pasword entered
 	CmdLCD(CLEAR_LCD);
 	CmdLCD(DSP_ON_CUR_OFF);
 	
-	if (verify_password(password))
+	if (verify_password((int8*)password))
 	{
 		// if correct password entered, goto ADMIN mode	
 		StrLCD("WELCOME ADMIN");
@@ -135,7 +77,7 @@ PASSW:	CmdLCD(DSP_ON_CUR_NOBLINK);
 		CmdLCD(GOTO_LINE2_POS0);
 		StrLCD("TRY AGAIN!");
 		// clear the password in memory and try password activity again
-		clearPassword(password);
+		clearPassword((int8*)password);
 		delay_ms(750);
 		goto PASSW;
 	}
@@ -188,13 +130,14 @@ AFT_PASS: CmdLCD(DSP_ON_CUR_OFF);
 			goto AFT_PASS;
 	}
 	CmdLCD(CLEAR_LCD);
-	
+	delay_ms(50);
 	// select continue or exit
 	StrLCD("1. Continue");
 	CmdLCD(GOTO_LINE2_POS0);
 	StrLCD("Any key to Exit");
+	
 	key = keyScan();
-	delay_ms(150);
+	delay_ms(100);
 	switch(key)
 	{
 		case '1': // continue

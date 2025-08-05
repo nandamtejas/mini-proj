@@ -8,6 +8,9 @@
 #include "lcd.h"
 #include "kpm_defines.h"
 
+// extern variable to hide the password
+extern volatile uint32 hide;
+
 // Password enter KPM LUT
 const uint8 passwordLUT[4][4] = 
 {
@@ -77,11 +80,12 @@ uint8 keyScan(void)
 	
 	return passwordLUT[row][col];
 }
+
 // Function to get string input from KPM
-uint8* strKeyScan(void)
+void strKeyScan(uint8* result)
 {
 	// This function is to scan the string input from KPM and return the entered string
-	uint8 result[16];
+	//uint8 result[16];
 	uint8 key;
 	int32 i=0;
 	
@@ -94,10 +98,14 @@ uint8* strKeyScan(void)
 		
 		// call the keyScan function
 		key = keyScan();
+		delay_ms(150);
 		
 		// if key == 'E', break the loop
 		if (key == 'E')
+		{
+			result[i] = '\0';
 			break;
+		}
 		
 		// Check for the conditions
 		switch(key)
@@ -117,12 +125,15 @@ uint8* strKeyScan(void)
 			case ' ': result[i++] = key;
 						CharLCD(key);
 						delay_ms(50);
-						// clear part of cursor
-						CmdLCD(SHIFT_CUR_LEFT);
-						CharLCD(' ');
-						CmdLCD(SHIFT_CUR_LEFT);
-						// display '*' instead of entered key
-						CharLCD('*');
+						if (hide==1)
+						{
+							// clear part of cursor
+							CmdLCD(SHIFT_CUR_LEFT);
+							CharLCD(' ');
+							CmdLCD(SHIFT_CUR_LEFT);
+							// display '*' instead of entered key
+							CharLCD('*');
+						}
 						break;
 			case 'B': // backspace
 					result[i--] = '\0';
@@ -143,64 +154,26 @@ uint8* strKeyScan(void)
 					break;
 		}
 	}
-	result[i] = '\0';
-	return result;
 }
 
 // User defined function to get input from KPM
-uint32 getU32InKPM(void)
+uint32 U32KeyScan(void)
 {
 	// Function to scan positive numeric data through KPM.
-	// Only numeric keys entered are considered as data except for special symbols like '*', '#', 'SPACE'
-	// If key entered is in the followinf 'B', 'C', 'E': these are special characters which has their own meaning and has special functionality
 	uint32 res=0;
-	uint8 key;
+	uint8 i;
+	uint8 resStr[5];
 	
-	while (res < 10000)
+	// Call strKeyScan function to enter the value
+	strKeyScan(resStr);
+	
+	// Convert the entered input to an unsigned integer
+	for (i=0; resStr[i] != '\0'; i++)
 	{
-		key = keyScan();
-		
-		if (key == 'E')
-			break;
-		
-		switch(key)
-		{	
-			case '0':
-			case '1':
-			case '2':
-			case '3':
-			case '4':
-			case '5':
-			case '6':
-			case '7':
-			case '8':
-			case '9': res = (res*10) +  (key-'0');
-					CharLCD(key);
-					break;
-			case ' ': // space is invalid, don't consider as a key
-			case '*': // '*' is invalid, don't consider as a key
-			case '#': // '#' is invalid, don't consider as a key
-						break;
-			case 'B': // backspace
-					res = res/10;
-					// clear part of cursor
-					CmdLCD(SHIFT_CUR_LEFT);
-					CharLCD(' ');
-					CmdLCD(SHIFT_CUR_LEFT);
-						break;
-			case 'C': // clear entered value
-					while (res != 0)
-					{
-						res = res/10;
-						// clear part of cursor
-						CmdLCD(SHIFT_CUR_LEFT);
-						CharLCD(' ');
-						CmdLCD(SHIFT_CUR_LEFT);
-					}
-					break;
-				
+		if (ISWITHIN(resStr[i], '0', '9'))
+		{
+			res = (res*10) + (resStr[i]-'0');
 		}
-		delay_ms(250);
 	}
 	return res;
 }

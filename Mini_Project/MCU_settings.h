@@ -16,6 +16,12 @@
 // ADMIN SETTINGS
 #define ADMIN_PASSWORD "0123"
 
+
+// Defines for Mode Status LED
+#define CLOCK_MODE_STATUS_LED 25 // @P1.25
+#define MESSAGE_SCROLL_MODE_STATUS_LED 26 // @P1.26
+#define ADMIN_MODE_STATUS_LED 27 // @P1.27
+
 //#define NULL ((void *) 0)
 
 // Simple MACRO Definitions

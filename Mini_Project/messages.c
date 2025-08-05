@@ -37,18 +37,20 @@ Message messageList[TOTAL_MESSAGES] = {
 	{17, 45, "End of Day - See you Tommorow!", 1},
 };
 
-Message currentMessages[10];
+// Function to clear the current Messages 
+Message emptyMessage = {0,0,"",1};
+	
+// Considering currentMessages as Array of pointer to Message structure
+Message *currentMessages[10];
 int32 sel=0;
 
 // clear current Messages
 void clearCurrentMessages(void)
 {
-	// Function to clear the current Messages 
-	Message emptyMessage = {0,0,"",1};
 	for (--sel; sel>=0; sel--)
 	{
 		// overwrite the message index with empty
-		currentMessages[sel] = emptyMessage;
+		currentMessages[sel] = &emptyMessage;
 	}
 	// reset the sel value
 	sel=0;
@@ -73,7 +75,7 @@ void getMessagesFromTime(uint32 hour, uint32 min)
 			if (messageList[i].enabled == 1)
 			{
 				// include this message
-				currentMessages[sel++] = messageList[i];
+				currentMessages[sel++] = &messageList[i];
 			}
 		}
 	}
@@ -102,6 +104,7 @@ AFT_PASS: CmdLCD(CLEAR_LCD);
 	CmdLCD(DSP_ON_CUR_NOBLINK);
 	
 	key = keyScan();
+	delay_ms(100);
 	switch(key)
 	{
 		case '1': // enable
@@ -112,6 +115,7 @@ AFT_PASS: CmdLCD(CLEAR_LCD);
 				CmdLCD(CLEAR_LCD);
 				CmdLCD(DSP_ON_CUR_OFF);
 				StrLCD("Incorrect option");
+				delay_ms(50);
 				goto AFT_PASS;
 	}
 	
@@ -137,6 +141,7 @@ AFT_PASS: CmdLCD(CLEAR_LCD);
 	
 	// Get KPM key input
 	key = keyScan();
+	delay_ms(100);
 	switch(key)
 	{
 		case '0':
@@ -158,9 +163,8 @@ AFT_PASS: CmdLCD(CLEAR_LCD);
 			CmdLCD(CLEAR_LCD);
 			CmdLCD(DSP_ON_CUR_OFF);
 			StrLCD("Incorrect Index");
+			delay_ms(50);
 			goto AFT_PASS;
-			
-			
 			
 	}
 }
@@ -170,9 +174,6 @@ AFT_PASS: CmdLCD(CLEAR_LCD);
 void displayMarquee(void)
 {
 	// This function provides the logic for message marquee
-	// Input is activityStopFlag
-	// if activityStopFlag=0 -> Continue the process
-	// if activityStopFlag=1 -> Terminate the Process
 	int32 i;
 	// Function to dipslay message marquee
 	//CmdLCD(CLEAR_LCD);
@@ -184,12 +185,61 @@ void displayMarquee(void)
 	for (i=0; i<sel; i++)
 	{
 		// call message marquee function
-		message_marquee_v3(currentMessages[i].text);
+		if (currentMessages[i]->enabled == 1)
+		{
+			message_marquee_v3(currentMessages[i]->text);
+		}
 	}
-	//CmdLCD(GOTO_LINE1_POS0);
-	//CharLCD(' ');
-	//CmdLCD(GOTO_LINE1_POS0);
 }
+
+// Function to indicate the message change
+uint32 isCurrentMessagesModifiedorCorrupted(void)
+{
+	// This function is to check the current messages to be scrolled is modified in ADMIN MODE or corrupted in some other circumstances.
+	// Message modification can be checked in enabled member of currentMessages
+	
+	uint32 i;
+	// if there are no currentMessages, return 0 indicates no message is present to get modified
+	if (sel==0)
+		return 0;
+	
+	for (i=0; i<sel; i++)
+	{
+		// Iterate through all the currentMessages present, check for their message enabled status
+		// If any of the message is enabled status is 0, i.e the message is corrupted under some circumstances
+		// Either in ADMIN has modified the message or any other corruption took place
+		if (currentMessages[i]->enabled == 0)
+			return 1;
+	}
+	// If not found any modifications, return 0, indicating no messages has been corrupted
+	return 0;
+}
+
+void reorderCurrentMessages(void)
+{
+	// Function is to reorder currentMessages list if any corruption or modification takes place
+	int32 i, j;
+	// First we need to clear the corrupted messages
+	for (i=0; i<sel; i++)
+	{
+		if (currentMessages[i]->enabled == 0)
+		{
+			for (j=i+1; j<sel; j++)
+			{
+				currentMessages[j-1] = currentMessages[j];
+			}
+			sel--;
+			i--;
+		}
+	}
+}
+
+int32 getCurrentMessagesLength(void)
+{
+	// function to get currentMessages length
+	return sel;
+}
+
 
 
 // Function to get next message's hour and min to be displayed in message scroll
@@ -226,3 +276,5 @@ void setNextMessageAlarm(void)
 	// make current messages to display be ready
 	// getMessagesFromTime(hour, minute);
 }
+
+// 

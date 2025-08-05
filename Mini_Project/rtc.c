@@ -136,7 +136,7 @@ void edit_time(void)
 	uint8 key;
 	
 	delay_ms(250);
-	CmdLCD(CLEAR_LCD);
+REAP:	CmdLCD(CLEAR_LCD);
 	
 	// display options to edit
 	StrLCD("1.HOUR 2.MIN");
@@ -147,7 +147,7 @@ void edit_time(void)
 	CmdLCD(GOTO_LINE2_POS0+8);
 	
 	// Key scan the option and perform necessary operation
-REAP:	key = keyScan();
+	key = keyScan();
 	CharLCD(key);
 	delay_ms(250);
 	CmdLCD(CLEAR_LCD);
@@ -159,19 +159,19 @@ REAP:	key = keyScan();
 			// hour
 			StrLCD("HOUR: ");
 			CmdLCD(GOTO_LINE2_POS0);
-			HOUR = getU32InKPM();
+			HOUR = U32KeyScan();
 			break;
 		case '2':
 			// min
 			StrLCD("MIN: ");
 			CmdLCD(GOTO_LINE2_POS0);
-			MIN = getU32InKPM();
+			MIN = U32KeyScan();
 			break;
 		case '3':
 			// sec
 			StrLCD("SEC: ");
 			CmdLCD(GOTO_LINE2_POS0);
-			SEC = getU32InKPM();
+			SEC = U32KeyScan();
 			break;
 		
 		default: // repeat
@@ -179,6 +179,7 @@ REAP:	key = keyScan();
 			CmdLCD(SHIFT_CUR_LEFT);
 			CharLCD(' ');
 			CmdLCD(SHIFT_CUR_LEFT);
+			CmdLCD(DSP_ON_CUR_OFF);
 			goto REAP;
 		
 	}
@@ -191,7 +192,7 @@ void edit_date(void)
 	// Inputs are taken from KPM and displayed in LCD
 	uint8 key;
 	delay_ms(250);
-	CmdLCD(CLEAR_LCD);
+REAP: CmdLCD(CLEAR_LCD);
 	
 	// display options to edit
 	StrLCD("1.DATE 2.MONTH");
@@ -202,7 +203,7 @@ void edit_date(void)
 	CmdLCD(GOTO_LINE2_POS0+8);
 	
 	// Key scan the option and perform necessary operation
-REAP:	key = keyScan();
+	key = keyScan();
 	CharLCD(key);
 	delay_ms(250);
 	CmdLCD(CLEAR_LCD);
@@ -215,7 +216,7 @@ REAP:	key = keyScan();
 			StrLCD("Enter DATE: ");
 			CmdLCD(DSP_ON_CUR_NOBLINK);
 			CmdLCD(GOTO_LINE2_POS0);
-			DOM = getU32InKPM();
+			DOM = U32KeyScan();
 			break;
 		case '2':
 			// min
@@ -223,7 +224,7 @@ REAP:	key = keyScan();
 			StrLCD("Enter MONTH: ");
 			CmdLCD(DSP_ON_CUR_NOBLINK);
 			CmdLCD(GOTO_LINE2_POS0);
-			MONTH = getU32InKPM();
+			MONTH = U32KeyScan();
 			break;
 		case '3':
 			// sec
@@ -231,7 +232,7 @@ REAP:	key = keyScan();
 			StrLCD("Enter YEAR: ");
 			CmdLCD(DSP_ON_CUR_NOBLINK);
 			CmdLCD(GOTO_LINE2_POS0);
-			YEAR = getU32InKPM();
+			YEAR = U32KeyScan();
 			break;
 		
 		default: // repeat
@@ -263,11 +264,9 @@ AFT_PASS: CmdLCD(DSP_ON_CUR_OFF);
 	switch(key)
 	{
 		case '1': // edit DATE
-			CmdLCD(DSP_ON_CUR_NOBLINK);
 			edit_date();
 			break;
 		case '2': // edit TIME
-			CmdLCD(DSP_ON_CUR_NOBLINK);
 			edit_time();
 			break;
 		default: // other than '1' or '2' key is pressed, take the input once again

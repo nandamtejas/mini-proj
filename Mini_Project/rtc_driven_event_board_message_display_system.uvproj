@@ -45,7 +45,7 @@
             <InvalidFlash>1</InvalidFlash>
           </TargetStatus>
           <OutputDirectory>.\</OutputDirectory>
-          <OutputName>main2</OutputName>
+          <OutputName>message_marquee_test2</OutputName>
           <CreateExecutable>1</CreateExecutable>
           <CreateLib>0</CreateLib>
           <CreateHexFile>1</CreateHexFile>
@@ -436,11 +436,6 @@
               <FilePath>.\cfgPortPin.c</FilePath>
             </File>
             <File>
-              <FileName>InterruptCfg.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\InterruptCfg.c</FilePath>
-            </File>
-            <File>
               <FileName>kpm.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\kpm.c</FilePath>
@@ -456,11 +451,6 @@
               <FilePath>.\lm35.c</FilePath>
             </File>
             <File>
-              <FileName>main.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\main.c</FilePath>
-            </File>
-            <File>
               <FileName>messages.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\messages.c</FilePath>
@@ -469,6 +459,11 @@
               <FileName>rtc.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\rtc.c</FilePath>
+            </File>
+            <File>
+              <FileName>message_marquee_test2.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\tests\message_marquee_test2.c</FilePath>
             </File>
           </Files>
         </Group>

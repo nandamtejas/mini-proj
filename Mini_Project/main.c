@@ -69,9 +69,6 @@ Hardware components involved include:
 #include "messages.h"
 #include "message_marquee.h"
 
-// Defines for Mode Status LED
-#define CLOCK_MODE_STATUS_LED 25 // @P1.25
-#define MESSAGE_SCROLL_MODE_STATUS_LED 26 // @P1.26
 
 
 // LCD CGRAM
@@ -151,6 +148,22 @@ void eint0_isr(void) __irq
 			// stop current scrolling
 			scrollStopFlag = 1;
 		}
+		else if (isCurrentMessagesModifiedorCorrupted())
+		{
+			// if current message list is modified by admin, reorder the currentMessageList
+			reorderCurrentMessages();
+			
+			// Check the currentMessageLength after reordering, if 0 -> Stop scroll
+			if (getCurrentMessagesLength() == 0)
+			{
+				// Then reset the currentAlarmMode to ALARM_STOP_MODE
+				currentAlarmMode = ALARM_STOP_MODE;
+				// reset the next alarm
+				setNextMessageAlarm();
+				// stop current scrolling
+				scrollStopFlag = 1;
+			}
+		}
 		else
 		{
 			CmdLCD(GOTO_LINE2_POS0);
@@ -167,10 +180,15 @@ void eint0_isr(void) __irq
 	
 	// reset the status LEDs
 	if (previousSystemMode == CLOCK_MODE)
+	{
 		IOSET1 = 1<<CLOCK_MODE_STATUS_LED;
+		IOCLR1 = 1<<MESSAGE_SCROLL_MODE_STATUS_LED;
+	}
 	else if (previousSystemMode == MESSAGE_SCROLL_MODE)
+	{
+		IOCLR1 = 1<<CLOCK_MODE_STATUS_LED;
 		IOSET1 = 1<<MESSAGE_SCROLL_MODE_STATUS_LED;
-	
+	}	
 	CmdLCD(DSP_ON_CUR_OFF);
 		
 	
