@@ -1,7 +1,7 @@
 // pinfunc.h
 
 #ifndef _PINFUNC_H
-#define _PIN_FUNC_H
+#define _PINFUNC_H
 // Pinfuncs
 #define PINFUNC1 0
 #define PINFUNC2 1
