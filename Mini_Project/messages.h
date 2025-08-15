@@ -11,5 +11,7 @@ void displayMarquee(void);
 void setNextMessageAlarm(void);
 void edit_message(void);
 int32 getCurrentMessagesEnabledLength(void);
+uint32 isWithinScrollWindow(uint32 hour, uint32 min, Message message);
+uint32 currentTimeWithinScrollWindow(void);
 
 #endif

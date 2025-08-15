@@ -14,16 +14,6 @@
 // Total messages
 #define TOTAL_MESSAGES 10
 
-/*
-// Message structure
-struct Message {
-	uint32 hour;
-	uint32 minute;
-	uint8 text[80];
-	uint8 enabled;
-};
-*/
-
 Message messageList[TOTAL_MESSAGES] = {
 	{7, 45, "Good Morning! Classes Starts Soon", 1},
 	{13, 45, "C Programming Session in Class number 2", 1},
@@ -56,10 +46,67 @@ void clearCurrentMessages(void)
 	sel=0;
 }
 
+// check current time is in between 15 minutes interval of any message
+uint32 isWithinScrollWindow(uint32 hour, uint32 min, Message message)
+{
+	// This function checks whether the current time is in between the message intervals or not
+	// for eg: current time is 7:50, and the messageList has message scheduled at 7:45
+	// as current time is in the interval between 7:45 and 8:00, it should return 1 otherwise 0
+	/*uint32 lbhour, ubhour;
+	uint32 lbmin, ubmin;
+	
+	lbmin = message.minute; 
+	ubmin = message.minute+15;
+	lbhour = message.hour; 
+	ubhour = (ubmin>=60)?lbhour+1: lbhour;
+	
+	if (ISWITHIN(hour, lbhour, ubhour))
+		if (ISWITHIN(min, lbmin, ubmin))
+			return 1;
+	return 0;
+	*/
+	uint32 currMinutes = hour*60+min;
+	uint32 startMinutes = message.hour*60+message.minute;
+	uint32 stopMinutes = startMinutes+15;
+	
+	// Handle wrap around at midnight
+	if (stopMinutes>=24*60)
+		stopMinutes -= 24*60;
+	
+	if (startMinutes <= stopMinutes)
+	{
+		// Normal day case
+		return ISINRANGE(currMinutes, startMinutes, stopMinutes);
+	}
+	else
+	{
+		// Wrap-around case: window goes past midnight
+		return (ISGTEQ(currMinutes, startMinutes) || ISLESSER(currMinutes, stopMinutes));
+	}
+}
+
+// check time is within the messages
+uint32 currentTimeWithinScrollWindow(void)
+{
+	// This function checks the current time within the message schedules
+	uint32 i;
+	
+	for (i=0; i<TOTAL_MESSAGES; i++)
+	{
+		// check all the messages whether the current time is within the interval,
+		// if yes, return 1, otherwise return 0
+		if ((messageList[i].enabled) && isWithinScrollWindow(HOUR, MIN, messageList[i]) )
+		{
+			return 1;
+		}
+	}
+	return 0;
+}
+
 // get messages from time
 void getMessagesFromTime(uint32 hour, uint32 min)
 {
-	// This message returns the Messages which are enabled
+	// This function returns the Messages which are enabled
 	uint32 i;
 	
 	// First clear the previous messages
@@ -68,13 +115,25 @@ void getMessagesFromTime(uint32 hour, uint32 min)
 	
 	for (i=0; i<TOTAL_MESSAGES; i++)
 	{
-		// Check hour and min match
+		/*// Check hour and min match
 		if (ISEQUAL(messageList[i].hour, hour) && ISEQUAL(messageList[i].minute, min))
 		{
 			// Check if the message is enabled
 			if (messageList[i].enabled == 1)
 			{
 				// include this message
+				currentMessages[sel++] = &messageList[i];
+			}
+		}
+		*/
+		
+		// check if message is enabled or disabled
+		if (messageList[i].enabled == 1)
+		{
+			// if message is enabled, further check whether the time is in the range of 15 minutes
+			if (isWithinScrollWindow(hour, min, messageList[i]))
+			{
+				// if current time is within message interval, add message in currentMessageScroll
 				currentMessages[sel++] = &messageList[i];
 			}
 		}
@@ -220,24 +279,35 @@ void setNextMessageAlarm(void)
 	for (i=0; i<TOTAL_MESSAGES; i++)
 	{
 		// check message is enabled or not
-		if (messageList[i].enabled == 0)
+		if (messageList[i].enabled == 1)
 		{
-			// if message is not enabled, pass
-			continue;
-		}
-		
-		if (ISLESSER(messageList[i].hour, hour) || (ISEQUAL(messageList[i].hour, hour) && ISLTEQ(messageList[i].minute, minute)))
-		{
-			if (ISLESSER(HOUR, messageList[i].hour) || (ISEQUAL(HOUR, messageList[i].hour) && ISLTEQ(MIN, messageList[i].minute)))
+			if (ISLESSER(messageList[i].hour, hour) || (ISEQUAL(messageList[i].hour, hour) && ISLTEQ(messageList[i].minute, minute)))
 			{
-				// update the hour and minute
-				hour = messageList[i].hour;
-				minute= messageList[i].minute;
+				if (ISLESSER(HOUR, messageList[i].hour) || (ISEQUAL(HOUR, messageList[i].hour) && ISLTEQ(MIN, messageList[i].minute)))
+				{
+					// update the hour and minute
+					hour = messageList[i].hour;
+					minute= messageList[i].minute;
+				}
 			}
 		}
 	}
 	
 	// set the Alarm
+	if ((hour == 24) && (minute == 60)) 
+	{
+		// if the current time is not in any scroll window, then set the Alarm at the starting time.
+		// logic to find starting time
+		for (i=0; i<TOTAL_MESSAGES; i++)
+		{
+			if (ISLESSER((messageList[i].hour*60+messageList[0].minute), (hour*60+minute) ))
+			{
+				hour = messageList[i].hour;
+				minute = messageList[i].minute;
+			}
+		}
+	}
+	
 	setAlarmTime(hour, minute);
 	// make current messages to display be ready
 	// getMessagesFromTime(hour, minute);

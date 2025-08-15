@@ -34,5 +34,11 @@
 #define ISNOTWITHIN(val, x, y) (!(ISWITHIN(val, x, y)))
 #define ISBETWEEN(val, x, y) (x<y) ? (((val)>(x)) && ((val)<(y))) : (((val)>(y)) && ((val)<(x)))
 #define ISNOTBETWEEN(val, x, y) (!(ISNOTBETWEEN(val, x, y)))
-
+#define ISINRANGE(val, x, y) ISWITHIN(val, x, (y-1))
+#define ISNOTINRANGE(val, x, y) ISNOTWITHIN(val, x, (y-1))
+#define ISLEAPYEAR(val) ( ( ((val%4)==0) && ((val%100)!=0) ) || ((val%400)==0) ) 
+#define IS30DAYMONTH(month) (((month)==4)||((month)==6)||((month)==9)||((month)==11))
+#define IS31DAYMONTH(month) (!(((month)==2) || IS30DAYMONTH(month)))
+#define MAXIMUM(x,y) ( ((x)>(y)) ? (x):(y) )
+#define MINIMUM(x,y) ( ((x)<(y)) ? (x):(y) )
 #endif

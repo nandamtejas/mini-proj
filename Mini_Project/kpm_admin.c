@@ -49,7 +49,7 @@ void clearPassword(int8* password)
 void admin_enter_password()
 {
 	// ADMIN mode activity starts
-	uint8 password[20];
+	uint8 password[17];
 	
 	// Password Activity displayed in LCD starts
 PASSW:	CmdLCD(DSP_ON_CUR_NOBLINK);
@@ -62,9 +62,9 @@ PASSW:	CmdLCD(DSP_ON_CUR_NOBLINK);
 	// call enter_password function
 	//enter_password(password);
 	hide=1;
-	strKeyScan(password);
+	strKeyScan(password, 16);
 	hide=0;
-	delay_ms(250);
+	delay_ms(50);
 	
 	// Clear screen after pasword entered
 	CmdLCD(CLEAR_LCD);

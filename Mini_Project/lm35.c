@@ -48,8 +48,8 @@ void displayTemp(void)
 	ReadLM35(&temp);
 	
 	// Show Temperature
-	CmdLCD(SHIFT_CUR_RIGHT);
+	CmdLCD(GOTO_LINE1_POS0+10);
 	F32LCD(temp, 1);
-	//StrLCD("oC");
 	CharLCD(0);
+	CharLCD('C');
 }

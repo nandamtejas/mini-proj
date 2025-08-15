@@ -72,7 +72,8 @@ Hardware components involved include:
 
 
 // LCD CGRAM
-const uint8 degCentSymbol[8] = {0x08,0x14,0x0B,0x04,0x04,0x04,0x03,0x00};
+const uint8 degCentSymbol[8] = {0x04,0x0A,0x0A,0x04,0x00,0x00,0x00,0x00};
+// const uint8 degCentSymbol[8] = {0x08,0x14,0x0B,0x04,0x04,0x04,0x03,0x00};
 // const uint8 degCentSymbol[8] = {0x17,0x08,0x08,0x08,0x08,0x08,0x07,0x00};
 
 // enum for SystemModes
@@ -114,12 +115,15 @@ volatile uint32 scrollStopFlag = 0;
 volatile uint32 msgModifiedFlag = 0;
 
 // ISR declaration
+// ADMIN_MODE eint0 isr
 void eint0_isr(void) __irq
 {
-	uint32 prevALHour, prevALMin;
-	// ISR Activity starts
+	//ISR Activity starts
 	// Check if the currentSystemMode is already ADMIN_MODE, if true do nothing
-	if (ISEQUAL(currentSystemMode, ADMIN_MODE)) return;
+	if (ISEQUAL(currentSystemMode, ADMIN_MODE)) goto EXIT_EINT0;
+	
+	// If the currentSystemMode is ADMIN_MODE, No other interrupt should occur, Hence Alarm Interrupt is disables for a while
+	VICIntEnClr = (1<<ALARM_VIC_CHNO);
 	
 	// Turn off the other LED
 	IOCLR1 = 1<<CLOCK_MODE_STATUS_LED;
@@ -129,78 +133,27 @@ void eint0_isr(void) __irq
 	previousSystemMode = currentSystemMode;
 	currentSystemMode = ADMIN_MODE;
 	
-	// If the currentSystemMode is ADMIN_MODE, No other interrupt should occur, Hence Alarm Interrupt is disables for a while
-	VICIntEnClr = (1<<ALARM_VIC_CHNO);
-	// admin mode
-	adminMode();
-	CmdLCD(CLEAR_LCD);
-	
-	// If the previousSystemMode is MESSAGE_SCROLL_MODE, display the EVENT_BOARD
-	// Re-display the EVENT-BOARD in LCD
+	// if previousSystemMode is MESSAGE_SCROLL_MODE, set to 1
 	if ((previousSystemMode == MESSAGE_SCROLL_MODE) && (currentAlarmMode == ALARM_START_MODE))
 	{
-		// Check if the RTC time has modified by the ADMIN
-		prevALMin = ((ALMIN-15)+60)%60;
-		prevALHour = (ALMIN<=15)?ALHOUR-1:ALHOUR;
-
-		if ( 
-			(ISNOTWITHIN(HOUR, prevALHour, ALHOUR)) || ISNOTWITHIN(MIN, prevALMin, ((ALMIN<15)?(ALMIN+60):(ALMIN))) \
-			|| ((msgModifiedFlag == 1) && (getCurrentMessagesEnabledLength() == 0))
-		)
-		{
-			// If the time has been changed by the ADMIN which is not between the range of ALARM_START time and ALARM_STOP time (15 minutes Bandwidth), 
-			// Or the message has beed modified
-			// Then reset the currentAlarmMode to ALARM_STOP_MODE
-			currentAlarmMode = ALARM_STOP_MODE;
-			// reset the next alarm
-			setNextMessageAlarm();
-			// stop current scrolling
-			scrollStopFlag = 1;
-		}
-		else
-		{
-			CmdLCD(GOTO_LINE2_POS0);
-			StrLCD("EVENT BOARD");
-			CmdLCD(GOTO_LINE1_POS0);
-		}
+		// stop scrolling
+		scrollStopFlag=1;
 	}
 	
-	// reset the message modified flag
-	msgModifiedFlag=0;
-			
-	// If any changes made for Date and Time or Message, Make Sure to update the Alarm Details which should be go along with current time
-	// If Time has changed or any of message enable bit is modified, call the below function
-	// This function should be called when Alarm is disabled, i.e; If Message Scrolling is happening right now, This function should not be called
-	if (currentAlarmMode == ALARM_DISABLE)
-		setNextMessageAlarm();
-	
-	// reset the status LEDs
-	if (previousSystemMode == CLOCK_MODE)
-	{
-		IOSET1 = 1<<CLOCK_MODE_STATUS_LED;
-		IOCLR1 = 1<<MESSAGE_SCROLL_MODE_STATUS_LED;
-	}
-	else if (previousSystemMode == MESSAGE_SCROLL_MODE)
-	{
-		IOCLR1 = 1<<CLOCK_MODE_STATUS_LED;
-		IOSET1 = 1<<MESSAGE_SCROLL_MODE_STATUS_LED;
-	}	
-	CmdLCD(DSP_ON_CUR_OFF);
-		
-	
-	// Re-Enable the Alarm register
-	VICIntEnable = (1<<ALARM_VIC_CHNO);
-	
-	// ISR Activity complete
-	EXTINT = 1<<0;
+	// ISR Activity ends
+EXIT_EINT0:	EXTINT = (1<<0);
 	
 	// Clear the VICVectAddr register
 	VICVectAddr = 0;
 }
 
+// Alarm register ISR
 void rtc_alarm_isr(void) __irq
 {	
 	// ISR Activity Starts
+	
+	// Check if the Alarm triggered mistakenly
+	//if (!(currentTimeWithinMessageSchedule())) goto EXT_RTC;
 	
 	// Change currentSystemMode to MESSAGE_SCROLL_MODE
 	previousSystemMode = currentSystemMode;
@@ -211,13 +164,13 @@ void rtc_alarm_isr(void) __irq
 	
 	// If currentSystemMode is ADMIN_MODE
 	// check if ISR invoked later it should be invoked
-	if (ISWITHIN(MIN, ALMIN, ALMIN+15))
+	if ( ISWITHIN(MIN, ALMIN, ((ALMIN+15)-((ALMIN+15)%15)) ))
 	{
 		// Check for the currentAlarmMode
 		if (currentAlarmMode == ALARM_DISABLE)
 		{
 			// If currentAlarmMode is ALARM_DISABLE, Set a next alarm after 15 minutes to stop  and mode set to ALARM_START_MODE
-			ALMIN = (MIN + 15) ;//- ((MIN+15)%15);											    
+			ALMIN = (MIN + 15) - ((MIN+15)%15);											    
 			ALHOUR = (HOUR + (ALMIN / 60)) % 24;
 			ALMIN = ALMIN%60;
 			currentAlarmMode = ALARM_START_MODE;
@@ -246,6 +199,8 @@ void rtc_alarm_isr(void) __irq
 int main()
 {	
 	volatile uint32 flag=0;
+	// uint32 prevALHour, prevALMin;
+	uint32 currMins, startMins, stopMins;
 	// Cfg @P1.25, P1.26, P1.27 as Gpio out pins
 	WRITENIBBLE(IODIR1, CLOCK_MODE_STATUS_LED, 3);
 	
@@ -260,8 +215,9 @@ int main()
 
 	//setTime(7, 44, 58);
 	
-	// Initial Alarm Set
-	setNextMessageAlarm();
+	// Set date and time for testing purpose
+	//setDate(8,8,2025);
+	setTime(7,44,58);
 	
 	// Init LCD
 	InitLCD();
@@ -272,11 +228,24 @@ int main()
 	delay_ms(250);
 	CmdLCD(CLEAR_LCD);
 	
+	// Check current time is within the schedule
+	if (currentTimeWithinScrollWindow())
+	{
+		// set Alarm
+		setAlarmTime(HOUR, MIN);
+	}
+	else
+	{
+		// Initial Alarm Set
+		setNextMessageAlarm();
+	}
+	
 	// 
 	while(1)
 	{
 		switch(currentSystemMode)
 		{
+			// CLOCK_MODE operation
 			case CLOCK_MODE: // Main Clock mode
 				// CLOCK_MODE status LED ON
 				IOSET1 = 1<<CLOCK_MODE_STATUS_LED;
@@ -288,8 +257,10 @@ int main()
 				displayClock();
 				// display temperature
 				displayTemp();
-				previousSystemMode = CLOCK_MODE;
+				//previousSystemMode = CLOCK_MODE;
 				break;
+			
+			// MESSAGE_SCROLL_MODE operation
 			case MESSAGE_SCROLL_MODE: // Message mode (IRQ interrupt)
 				// is done only when currentAlarmMode is ALARM_START_MODE
 				
@@ -299,6 +270,9 @@ int main()
 				
 					while (currentAlarmMode == ALARM_START_MODE)
 					{
+						// Check for scroll stop flag
+						if (scrollStopFlag==1)
+							break;
 						// In ALARM_START_MODE, message scrolling process will be done	
 						CmdLCD(DSP_ON_CUR_OFF);						
 						// collect available messages
@@ -318,6 +292,14 @@ int main()
 						currentAlarmMode = ALARM_DISABLE;
 						flag=0;
 					}
+					
+					// check if the Alarm stopped due to Admin mode
+					if (currentSystemMode == ADMIN_MODE)
+					{	
+						// reset and switch mode
+						flag=0;
+						break;
+					}
 				
 				// Change currentSystemMode to CLOCK_MODE
 				previousSystemMode = MESSAGE_SCROLL_MODE;
@@ -328,37 +310,115 @@ int main()
 				// Refresh the screen
 				CmdLCD(CLEAR_LCD);
 				break;
+			
+			// ADMIN_MODE operation
 			case ADMIN_MODE: // Admin Mode (FIQ interrupt)
 				
-				//adminMode();
+				// Refresh the screen
+				CmdLCD(CLEAR_LCD);
+				adminMode();
 			
 				// For either MESSAGE_SCROLL_MODE or CLOCK_MODE, The LCD Cursor should be OFF
+				CmdLCD(CLEAR_LCD);
 				CmdLCD(DSP_ON_CUR_OFF);
-
-				if (previousSystemMode == MESSAGE_SCROLL_MODE)
+				
+				// If the previousSystemMode is MESSAGE_SCROLL_MODE, display the EVENT_BOARD
+				// Re-display the EVENT-BOARD in LCD
+				if ((previousSystemMode == MESSAGE_SCROLL_MODE) && (currentAlarmMode == ALARM_START_MODE))
 				{
-					// if MESSAGE_SCROLL_MODE is previous system mode, then check for the currentAlarmMode
-					if (currentAlarmMode == ALARM_START_MODE)
+					// Check if the RTC time has modified by the ADMIN
+					// prevALMin = ((ALMIN-15)+60)%60;
+					// prevALHour = (ALMIN<=15)?ALHOUR-1:ALHOUR;
+					stopMins = ALHOUR*60+ALMIN;
+					startMins = stopMins-15;
+					currMins = HOUR*60+MIN;
+					
+					if ( 
+						(!currentTimeWithinScrollWindow())
+						|| ((msgModifiedFlag == 1) && (getCurrentMessagesEnabledLength() == 0))
+					)
 					{
-						// if currentAlarmMode is ALARM_START_MODE, Re-display the EVENT BOARD in LCD
-						CmdLCD(GOTO_LINE2_POS0);
-						StrLCD("EVENT BOARD");
-						CmdLCD(GOTO_LINE1_POS0);
-					}
-					else
-					{
-						// if currentAlarmMode is ALARM_STOP_MODE, Reset the input flag
-						flag=0;
-					}
-					// Come back to MESSAGE_SCROLL_MODE
-					currentSystemMode = MESSAGE_SCROLL_MODE;
-				}
-				else
-					currentSystemMode = CLOCK_MODE;
+						// If the time has been changed by the ADMIN which is not between any of the 
+						// range of ALARM_START time and ALARM_STOP time (15 minutes Bandwidth), 
+						// Or the message has beed modified
+						// Then reset the currentAlarmMode to ALARM_STOP_MODE
 						
+						//StrLCD("Not WITHIN");
+						//delay_s(1);
+
+						currentAlarmMode = ALARM_STOP_MODE;
+						// reset the next alarm
+						setNextMessageAlarm();
+						// stop current scrolling
+						scrollStopFlag = 1;
+					}
+					else if ( currentTimeWithinScrollWindow() )
+					{
+						//if (ISWITHIN(HOUR, prevALHour, ALHOUR) && ISWITHIN(MIN, prevALMin, ((ALMIN<15)?(ALMIN+60):(ALMIN))))
+						if (ISWITHIN(currMins, startMins, stopMins))
+						{
+							// if the current time is changed within the current scroll time interval, i.e, in the range of ALARM_START and ALARM_STOP
+							// for example if system mode is under message scroll starts from 7:45 and admin triggered and changed the time to 7:55,
+							// which is between the current message interval, continue scrolling
+							// set stop scroll flag to 0 for continuing scrolling
+							//StrLCD("WITHIN SAME");
+							//delay_s(1);
+							scrollStopFlag=0;
+							// Refresh the EVENT BOARD title
+							CmdLCD(GOTO_LINE2_POS0);
+							StrLCD("EVENT BOARD");
+							CmdLCD(GOTO_LINE1_POS0);
+						}
+						else
+						{
+							// if the current time might not be in the current message scroll range, 
+							// but it is in other message schedule range,
+							// for example if the admin changed the time from 7:55 (message scroll interval time) to 10:25 (also the message scroll interval time for another message)
+							// Then reset with new messages with new Alarm.
+							//StrLCD("WITHIN DIFF");
+							//delay_s(1);
+							currentAlarmMode = ALARM_DISABLE;
+							flag=0;
+							setAlarmTime(HOUR, MIN);
+						}
+					}				
+				}
+				
+				// reset the message modified flag
+				msgModifiedFlag=0;
+				
+				
+				// If any changes made for Date and Time or Message, Make Sure to update the Alarm Details which should be go along with current time
+				// If Time has changed or any of message enable bit is modified, call the below function
+				// This function should be called when Alarm is disabled, i.e; If Message Scrolling is happening right now, This function should not be called
+				if (currentAlarmMode == ALARM_DISABLE)
+				{
+					// If the time modified by ADMIN which lies within the interval of message schedule time, then set Alarm now
+					if (currentTimeWithinScrollWindow())
+					 {
+						// set alarm and exit
+						setAlarmTime(HOUR, MIN);
+					 }
+					 else
+						setNextMessageAlarm();
+				}
+				
+				// reset the status LEDs
+				IOCLR1 = ((1<<CLOCK_MODE_STATUS_LED) | (1<<MESSAGE_SCROLL_MODE_STATUS_LED));
+				
+				if (previousSystemMode == CLOCK_MODE)
+					IOSET1 = 1<<CLOCK_MODE_STATUS_LED;
+				else if (previousSystemMode == MESSAGE_SCROLL_MODE)
+					IOSET1 = 1<<MESSAGE_SCROLL_MODE_STATUS_LED;
+				
+				currentSystemMode = previousSystemMode;
+				
+				// Re-Enable the Alarm register
+				VICIntEnable = (1<<ALARM_VIC_CHNO);
+				
+				CmdLCD(DSP_ON_CUR_OFF);
 				previousSystemMode = ADMIN_MODE;
 				break;
 		}
-		
 	}
 }

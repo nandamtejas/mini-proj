@@ -82,7 +82,7 @@ uint8 keyScan(void)
 }
 
 // Function to get string input from KPM
-void strKeyScan(uint8* result)
+void strKeyScan(uint8* result, uint32 sizeLimit)
 {
 	// This function is to scan the string input from KPM and return the entered string
 	//uint8 result[16];
@@ -90,18 +90,13 @@ void strKeyScan(uint8* result)
 	int32 i=0;
 	
 	while(1)
-	{
-		
-		// break if the entered string length exceeds 16
-		if (i>=16)
-			break;
-		
+	{		
 		// call the keyScan function
 		key = keyScan();
 		delay_ms(150);
 		
 		// if key == 'E', break the loop
-		if (key == 'E')
+EXT:	if (key == 'E')
 		{
 			result[i] = '\0';
 			break;
@@ -134,6 +129,13 @@ void strKeyScan(uint8* result)
 							// display '*' instead of entered key
 							CharLCD('*');
 						}
+						if (i>=sizeLimit)
+						{
+							// limit exceeds, exit with whatever entered password
+							key = 'E';
+							--i;
+							goto EXT;
+						}
 						break;
 			case 'B': // backspace
 					if (i == 0)
@@ -157,6 +159,7 @@ void strKeyScan(uint8* result)
 					break;
 		}
 	}
+	delay_ms(100);
 }
 
 // User defined function to get input from KPM
@@ -168,7 +171,7 @@ uint32 U32KeyScan(void)
 	uint8 resStr[5];
 	
 	// Call strKeyScan function to enter the value
-	strKeyScan(resStr);
+	strKeyScan(resStr, 5);
 	
 	// Convert the entered input to an unsigned integer
 	for (i=0; resStr[i] != '\0'; i++)

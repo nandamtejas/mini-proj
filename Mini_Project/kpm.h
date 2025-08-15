@@ -14,7 +14,7 @@ uint32 colCheck(void);
 uint8 keyScan(void);
 
 // user input function
-void strKeyScan(uint8*);
+void strKeyScan(uint8*, uint32);
 uint32 U32KeyScan(void);
 
 #endif
