@@ -412,12 +412,11 @@ int main()
 					IOSET1 = 1<<MESSAGE_SCROLL_MODE_STATUS_LED;
 				
 				currentSystemMode = previousSystemMode;
+				previousSystemMode = ADMIN_MODE;
+				CmdLCD(DSP_ON_CUR_OFF);
 				
 				// Re-Enable the Alarm register
 				VICIntEnable = (1<<ALARM_VIC_CHNO);
-				
-				CmdLCD(DSP_ON_CUR_OFF);
-				previousSystemMode = ADMIN_MODE;
 				break;
 		}
 	}

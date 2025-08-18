@@ -127,6 +127,6 @@ void message_marquee_v3(uint8* msg)
 		CmdLCD(GOTO_LINE1_POS0);
 		StrLCD(lcd_msg);
 		// wait for some time for displaying
-		delay_ms(50);
+		delay_ms(250);
 	}
 }
