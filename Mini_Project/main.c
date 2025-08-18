@@ -216,8 +216,8 @@ int main()
 	//setTime(7, 44, 58);
 	
 	// Set date and time for testing purpose
-	//setDate(8,8,2025);
-	setTime(7,44,58);
+	// setDate(8,8,2025);
+	// setTime(7,44,58);
 	
 	// Init LCD
 	InitLCD();
