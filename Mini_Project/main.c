@@ -120,28 +120,29 @@ void eint0_isr(void) __irq
 {
 	//ISR Activity starts
 	// Check if the currentSystemMode is already ADMIN_MODE, if true do nothing
-	if (ISEQUAL(currentSystemMode, ADMIN_MODE)) goto EXIT_EINT0;
-	
-	// If the currentSystemMode is ADMIN_MODE, No other interrupt should occur, Hence Alarm Interrupt is disables for a while
-	VICIntEnClr = (1<<ALARM_VIC_CHNO);
-	
-	// Turn off the other LED
-	IOCLR1 = 1<<CLOCK_MODE_STATUS_LED;
-	IOCLR1 = 1<<MESSAGE_SCROLL_MODE_STATUS_LED;
-	
-	// Change currentSystemMode
-	previousSystemMode = currentSystemMode;
-	currentSystemMode = ADMIN_MODE;
-	
-	// if previousSystemMode is MESSAGE_SCROLL_MODE, set to 1
-	if ((previousSystemMode == MESSAGE_SCROLL_MODE) && (currentAlarmMode == ALARM_START_MODE))
+	if (currentSystemMode != ADMIN_MODE) 
 	{
-		// stop scrolling
-		scrollStopFlag=1;
-	}
 	
+		// If the currentSystemMode is ADMIN_MODE, No other interrupt should occur, Hence Alarm Interrupt is disables for a while
+		// VICIntEnClr = (1<<ALARM_VIC_CHNO);
+		
+		// Turn off the other LED
+		IOCLR1 = 1<<CLOCK_MODE_STATUS_LED;
+		IOCLR1 = 1<<MESSAGE_SCROLL_MODE_STATUS_LED;
+		
+		// Change currentSystemMode
+		previousSystemMode = currentSystemMode;
+		currentSystemMode = ADMIN_MODE;
+		
+		// if previousSystemMode is MESSAGE_SCROLL_MODE, set to 1
+		if ((previousSystemMode == MESSAGE_SCROLL_MODE) && (currentAlarmMode == ALARM_START_MODE))
+		{
+			// stop scrolling
+			scrollStopFlag=1;
+		}
+	}	
 	// ISR Activity ends
-EXIT_EINT0:	EXTINT = (1<<0);
+	EXTINT = (1<<0);
 	
 	// Clear the VICVectAddr register
 	VICVectAddr = 0;
@@ -154,6 +155,7 @@ void rtc_alarm_isr(void) __irq
 	
 	// Check if the Alarm triggered mistakenly
 	//if (!(currentTimeWithinMessageSchedule())) goto EXT_RTC;
+
 	
 	// Change currentSystemMode to MESSAGE_SCROLL_MODE
 	previousSystemMode = currentSystemMode;
@@ -187,7 +189,6 @@ void rtc_alarm_isr(void) __irq
 			currentAlarmMode = ALARM_STOP_MODE;
 		}
 	}	
-	
 	// ISR Activuty complete
 	// Clear Interrupt Enable
 	ILR = 1<<1;
@@ -300,15 +301,14 @@ int main()
 						flag=0;
 						break;
 					}
-				
-				// Change currentSystemMode to CLOCK_MODE
-				previousSystemMode = MESSAGE_SCROLL_MODE;
-				currentSystemMode = CLOCK_MODE;
-				
 				// MESSAGE_SCROLL_MODE status LED OFF
 				IOCLR1 = 1<<MESSAGE_SCROLL_MODE_STATUS_LED;
 				// Refresh the screen
 				CmdLCD(CLEAR_LCD);
+				
+				// Change currentSystemMode to CLOCK_MODE
+				previousSystemMode = MESSAGE_SCROLL_MODE;
+				currentSystemMode = CLOCK_MODE;
 				break;
 			
 			// ADMIN_MODE operation
@@ -416,7 +416,7 @@ int main()
 				CmdLCD(DSP_ON_CUR_OFF);
 				
 				// Re-Enable the Alarm register
-				VICIntEnable = (1<<ALARM_VIC_CHNO);
+				// VICIntEnable = (1<<ALARM_VIC_CHNO);
 				break;
 		}
 	}
