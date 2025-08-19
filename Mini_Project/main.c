@@ -155,43 +155,39 @@ void rtc_alarm_isr(void) __irq
 	
 	// Check if the Alarm triggered mistakenly
 	//if (!(currentTimeWithinMessageSchedule())) goto EXT_RTC;
+
 	
-	// check if the currentSystemMode is not ADMIN mode
-	if (currentSystemMode != ADMIN_MODE)
+	// Change currentSystemMode to MESSAGE_SCROLL_MODE
+	previousSystemMode = currentSystemMode;
+	currentSystemMode = MESSAGE_SCROLL_MODE;
+	
+	// Clear other status LED
+	IOCLR1 = 1<<CLOCK_MODE_STATUS_LED;
+	
+	// If currentSystemMode is ADMIN_MODE
+	// check if ISR invoked later it should be invoked
+	if ( ISWITHIN(MIN, ALMIN, ((ALMIN+15)-((ALMIN+15)%15)) ))
 	{
-	
-		// Change currentSystemMode to MESSAGE_SCROLL_MODE
-		previousSystemMode = currentSystemMode;
-		currentSystemMode = MESSAGE_SCROLL_MODE;
-		
-		// Clear other status LED
-		IOCLR1 = 1<<CLOCK_MODE_STATUS_LED;
-		
-		// If currentSystemMode is ADMIN_MODE
-		// check if ISR invoked later it should be invoked
-		if ( ISWITHIN(MIN, ALMIN, ((ALMIN+15)-((ALMIN+15)%15)) ))
+		// Check for the currentAlarmMode
+		if (currentAlarmMode == ALARM_DISABLE)
 		{
-			// Check for the currentAlarmMode
-			if (currentAlarmMode == ALARM_DISABLE)
-			{
-				// If currentAlarmMode is ALARM_DISABLE, Set a next alarm after 15 minutes to stop  and mode set to ALARM_START_MODE
-				ALMIN = (MIN + 15) - ((MIN+15)%15);											    
-				ALHOUR = (HOUR + (ALMIN / 60)) % 24;
-				ALMIN = ALMIN%60;
-				currentAlarmMode = ALARM_START_MODE;
-				// disable the scrollStopFlag
-				scrollStopFlag = 0;
-			}
-			else if (currentAlarmMode == ALARM_START_MODE)
-			{
-				// If currentAlarmMode is ALARM_START_MODE, get the next alarm details and modify in Alarm Register. 
-				setNextMessageAlarm();
-				// enable the scrollStopFlag
-				scrollStopFlag = 1;
-				// set the Alarm Mode to ALARM_STOP_MODE
-				currentAlarmMode = ALARM_STOP_MODE;
-			}
-		}	
+			// If currentAlarmMode is ALARM_DISABLE, Set a next alarm after 15 minutes to stop  and mode set to ALARM_START_MODE
+			ALMIN = (MIN + 15) - ((MIN+15)%15);											    
+			ALHOUR = (HOUR + (ALMIN / 60)) % 24;
+			ALMIN = ALMIN%60;
+			currentAlarmMode = ALARM_START_MODE;
+			// disable the scrollStopFlag
+			scrollStopFlag = 0;
+		}
+		else if (currentAlarmMode == ALARM_START_MODE)
+		{
+			// If currentAlarmMode is ALARM_START_MODE, get the next alarm details and modify in Alarm Register. 
+			setNextMessageAlarm();
+			// enable the scrollStopFlag
+			scrollStopFlag = 1;
+			// set the Alarm Mode to ALARM_STOP_MODE
+			currentAlarmMode = ALARM_STOP_MODE;
+		}
 	}	
 	// ISR Activuty complete
 	// Clear Interrupt Enable
